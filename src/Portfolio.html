@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Portfolio</title>
+</head>
+<body>
+    <h2>Portfolio</h2>
+
+    <table id="table" style="width:100%">
+        <tr>
+            <th>Stock</th>
+            <th>Quantity</th>
+            <th>Price</th>
+            <th>Gain/Loss</th>
+        </tr>
+
+    </table>
+    <label for="symbol">Stock symbol</label>
+    <input type="text" id="symbolInput" name="symbol" list="symbolList">
+
+    <datalist id="symbolList">
+        <option id="stockCheck"></option>
+    </datalist>
+    <p>Quantity <input id="Quantity" /> </p>
+    <p>Price <input id="Price" /> </p>
+    <button id="resetButton">Reset</button>
+    <button id="updateButton">Update</button>
+    <script>
+        let resetButton = document.querySelector("#resetButton")
+        resetButton.addEventListener('click', () => {
+            fetch("portfolio/reset", {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    
+                },
+                
+            }).then(function () {
+                let table = document.querySelector("#table");
+                let rows = table.children;
+                for (let i = rows.length - 1; i > 0; i--) {
+                    rows[i].remove();
+                }
+
+            })
+        })
+        let updateButton = document.querySelector("#updateButton")
+        updateButton.addEventListener('click', () => {
+            let stockSymbol = document.querySelector("#symbolInput")
+            let Quantity = document.querySelector("#Quantity")
+            let Price = document.querySelector("#Price")
+
+            fetch("portfolio", {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    [stockSymbol.value]: {
+                        quantity: Number(Quantity.value),
+                        price: Number(Price.value)
+                    }
+                })
+            }).then(function (response) {
+                return response.json();
+            }).then(json => {
+                let table = document.querySelector("#table");
+                let existingRow
+                for (let row of table.children) {
+                    if (row.children[0].innerText === stockSymbol.value) {
+                        existingRow = row;
+                    }
+                }
+                if (existingRow) {
+                    existingRow.children[1].innerText = json.quantity
+                    existingRow.children[2].innerText = json.price;
+                    existingRow.children[3].innerText = json.gainLoss + '%';
+                } else {
+                    table.append(createStockRow(stockSymbol.value, Quantity.value, Price.value, json.gainLoss));
+                }
+            });
+        })
+
+        fetch("portfolio", {
+            headers: {
+                'Accept': 'application/json',
+            },
+        }).then(function (response) {
+            return response.json();
+        }).then(function (json) {
+            let table = document.querySelector("#table")
+            for (let stockSymbol in json) {
+                table.append(createStockRow(stockSymbol, json[stockSymbol].quantity, json[stockSymbol].price, json[stockSymbol].gainLoss));
+            }
+        })
+
+        function createStockRow(stock, quantity, price, gainLoss) {
+            let row = document.createElement('tr');
+            let stockEntry = document.createElement('td');
+            stockEntry.innerText = stock;
+            let quantityEntry = document.createElement('td');
+            quantityEntry.innerText = quantity;
+            let priceEntry = document.createElement('td');
+            priceEntry.innerText = price;
+            let gainLossEntry = document.createElement('td');
+            gainLossEntry.innerText = gainLoss + '%';
+            row.append(stockEntry, quantityEntry, priceEntry, gainLossEntry);
+            return row;
+        }
+
+        let symbolList = document.querySelector("#symbolList")
+        fetch("https://cloud.iexapis.com/stable/ref-data/symbols?token=pk_b8175220ccdb4571a7c028e1941693e8&filter=symbol,type", {
+            headers: {
+                'Accept': 'application/json',
+            }
+
+        }).then(function (response) {
+            return response.json();
+        }).then(function (json) {
+            for (let stock of json) {
+                if (stock.type != 'cs') {
+                    continue;
+                }
+                let option = document.createElement('option');
+                option.innerText = stock.symbol;
+                option.value = stock.symbol;
+                symbolList.append(option);
+            }
+        })
+
+    </script>
+</body>
+</html>

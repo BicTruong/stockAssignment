@@ -21,12 +21,15 @@ import base64
 import json
 import http.client
 import os
+from os import environ
 
 serverSocket = socket(AF_INET, SOCK_STREAM)
 
-serverPort = 8080
+serverPort = environ.get("PORT", 8080)
 serverSocket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-serverSocket.bind(("", serverPort))
+print(serverPort)
+print(gethostname())
+serverSocket.bind((gethostname(), serverPort))
 
 API_KEY = "pk_b8175220ccdb4571a7c028e1941693e8"
 
